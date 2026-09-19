@@ -393,11 +393,8 @@ document.addEventListener('DOMContentLoaded', () => {
     isPlaying = true;
     initAudioContext();
 
-    // Trigger YouTube background music if URL input is filled
-    const ytUrlInput = document.getElementById('inputYoutubeUrl');
-    if (ytUrlInput && ytUrlInput.value) {
-      playYouTubeBackgroundMusic(ytUrlInput.value, true);
-    }
+    // Start YouTube background music (00:00 to 01:03 looped)
+    playBGM();
 
     // 1. Hide tap callout overlay
     tapOverlay.classList.add('fade-out');
@@ -559,58 +556,141 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- YouTube Background Music Player Engine ---
-  let currentYoutubeVideoId = '';
-  let ytPlayerIframe = null;
+  // --- YouTube Background Music Player Engine (mMqJGTyA3T0, 00:00 to 01:03 loop) ---
+  const BGM_VIDEO_ID = 'mMqJGTyA3T0';
+  const BGM_START_TIME = 0;
+  const BGM_END_TIME = 63; // 01:03
 
-  function extractYouTubeId(url) {
-    if (!url) return '';
-    url = url.trim();
-    const regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
-    const match = url.match(regExp);
-    if (match && match[2] && match[2].length === 11) {
-      return match[2];
+  let ytPlayer = null;
+  let bgmLoopTimer = null;
+  let hasBgmStarted = false;
+
+  function initYouTubeBGM() {
+    if (window.YT && window.YT.Player) {
+      createYtPlayer();
+    } else {
+      if (!document.getElementById('yt-iframe-api')) {
+        const tag = document.createElement('script');
+        tag.id = 'yt-iframe-api';
+        tag.src = 'https://www.youtube.com/iframe_api';
+        const firstScriptTag = document.getElementsByTagName('script')[0];
+        firstScriptTag.parentNode.insertBefore(tag, firstScriptTag);
+      }
     }
-    if (url.length === 11) return url;
-    return '';
   }
 
-  function playYouTubeBackgroundMusic(url, autoPlay = true) {
-    const videoId = extractYouTubeId(url);
-    if (!videoId) return;
-    currentYoutubeVideoId = videoId;
+  window.onYouTubeIframeAPIReady = function() {
+    createYtPlayer();
+  };
+
+  function createYtPlayer() {
+    if (ytPlayer) return;
     const container = document.getElementById('youtubePlayerContainer');
     if (!container) return;
 
-    const mute = isAudioMuted ? 1 : 0;
-    const playParam = autoPlay ? 1 : 0;
-    container.innerHTML = `<iframe id="ytIframe" width="200" height="200" 
-      src="https://www.youtube.com/embed/${videoId}?enablejsapi=1&autoplay=${playParam}&loop=1&playlist=${videoId}&controls=0&mute=${mute}" 
-      frameborder="0" allow="autoplay"></iframe>`;
-
-    ytPlayerIframe = document.getElementById('ytIframe');
+    ytPlayer = new YT.Player('youtubePlayerContainer', {
+      height: '10',
+      width: '10',
+      videoId: BGM_VIDEO_ID,
+      playerVars: {
+        autoplay: 0,
+        controls: 0,
+        disablekb: 1,
+        enablejsapi: 1,
+        fs: 0,
+        modestbranding: 1,
+        playsinline: 1,
+        rel: 0,
+        start: BGM_START_TIME,
+        end: BGM_END_TIME,
+        loop: 1,
+        playlist: BGM_VIDEO_ID,
+        origin: window.location.origin
+      },
+      events: {
+        onReady: (event) => {
+          if (!isAudioMuted) {
+            try {
+              event.target.unMute();
+              event.target.setVolume(100);
+            } catch(e) {}
+          } else {
+            try { event.target.mute(); } catch(e) {}
+          }
+          if (hasBgmStarted) {
+            playBGM();
+          }
+        },
+        onStateChange: (event) => {
+          if (event.data === YT.PlayerState.ENDED) {
+            playBGM();
+          }
+        }
+      }
+    });
   }
 
-  function toggleYouTubeAudioMute(isMuted) {
-    if (!ytPlayerIframe || !ytPlayerIframe.contentWindow) return;
-    const command = isMuted ? 'mute' : 'unMute';
-    try {
-      ytPlayerIframe.contentWindow.postMessage(JSON.stringify({
-        event: 'command',
-        func: command,
-        args: []
-      }), '*');
-    } catch (e) {
-      console.warn('YouTube audio command postMessage exception:', e);
+  function playBGM() {
+    hasBgmStarted = true;
+    if (ytPlayer && typeof ytPlayer.playVideo === 'function') {
+      try {
+        if (!isAudioMuted) {
+          ytPlayer.unMute();
+          ytPlayer.setVolume(100);
+        } else {
+          ytPlayer.mute();
+        }
+        ytPlayer.seekTo(BGM_START_TIME, true);
+        ytPlayer.playVideo();
+        monitorBgmLoop();
+      } catch (e) {
+        console.warn('Error playing YouTube BGM:', e);
+      }
+    } else {
+      initYouTubeBGM();
     }
   }
+
+  function monitorBgmLoop() {
+    if (bgmLoopTimer) clearInterval(bgmLoopTimer);
+    bgmLoopTimer = setInterval(() => {
+      if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
+        try {
+          const current = ytPlayer.getCurrentTime();
+          if (current >= BGM_END_TIME || (ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.ENDED)) {
+            ytPlayer.seekTo(BGM_START_TIME, true);
+            ytPlayer.playVideo();
+          }
+        } catch (e) {}
+      }
+    }, 300);
+  }
+
+  // Pre-initialize YouTube Player
+  initYouTubeBGM();
 
   // --- Audio Mute Toggle ---
   audioToggleBtn.addEventListener('click', () => {
     isAudioMuted = !isAudioMuted;
     video.muted = isAudioMuted;
     
-    toggleYouTubeAudioMute(isAudioMuted);
+    if (ytPlayer) {
+      try {
+        if (isAudioMuted) {
+          if (typeof ytPlayer.mute === 'function') ytPlayer.mute();
+        } else {
+          if (typeof ytPlayer.unMute === 'function') {
+            ytPlayer.unMute();
+            ytPlayer.setVolume(100);
+          }
+          if (ytPlayer.getPlayerState && ytPlayer.getPlayerState() !== YT.PlayerState.PLAYING) {
+            playBGM();
+          }
+        }
+      } catch (e) {
+        console.warn('Audio toggle error:', e);
+      }
+    }
 
     if (isAudioMuted) {
       audioIconOn.classList.add('hidden');
@@ -642,8 +722,8 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Add to Google Calendar ---
   if (addToCalendarBtn) {
     addToCalendarBtn.addEventListener('click', () => {
-      const groom = document.getElementById('displayGroom') ? document.getElementById('displayGroom').innerText : 'Madhu';
-      const bride = document.getElementById('displayBride') ? document.getElementById('displayBride').innerText : 'Gaurav';
+      const groom = document.getElementById('displayGroom') ? document.getElementById('displayGroom').innerText : 'Gaurav';
+      const bride = document.getElementById('displayBride') ? document.getElementById('displayBride').innerText : 'Madhu';
       const venue = document.getElementById('displayVenue') ? document.getElementById('displayVenue').innerText : 'Grand Opera Banquet';
       const location = document.getElementById('displayLocation') ? document.getElementById('displayLocation').innerText : 'Bijwasan, Delhi';
 
