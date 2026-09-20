@@ -1,6 +1,7 @@
 /* ==========================================================================
    PREMIUM CINEMATIC DIGITAL WEDDING INVITATION - LOGIC & ANIMATION ENGINE
    ========================================================================== */
+import './style.css';
 
 document.addEventListener('DOMContentLoaded', () => {
   // Element References
@@ -743,13 +744,32 @@ document.addEventListener('DOMContentLoaded', () => {
   // HIGH-PERFORMANCE IDLE PREFETCH ENGINE & SERVICE WORKER
   // ==========================================================================
   
-  // Register Service Worker for 0ms Repeat-Visit Loading
-  if ('serviceWorker' in navigator && window.location.protocol !== 'file:') {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('/sw.js').catch(err => {
-        console.log('Service Worker registration skipped:', err);
+  // --- Service Worker Handling ---
+  if ('serviceWorker' in navigator) {
+    const isLocalhost = Boolean(
+      window.location.hostname === 'localhost' ||
+      window.location.hostname === '[::1]' ||
+      window.location.hostname.match(/^127(?:\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)){3}$/) ||
+      window.location.hostname.startsWith('192.168.')
+    );
+
+    if (isLocalhost) {
+      // In local dev, unregister existing SW and clear old caches so CSS updates immediately
+      navigator.serviceWorker.getRegistrations().then(registrations => {
+        for (const registration of registrations) {
+          registration.unregister();
+        }
       });
-    });
+      if ('caches' in window) {
+        caches.keys().then(keys => keys.forEach(key => caches.delete(key)));
+      }
+    } else if (window.location.protocol === 'https:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js').catch(err => {
+          console.log('Service Worker registration skipped:', err);
+        });
+      });
+    }
   }
 
   // Prefetch secondary doors & videos in background during idle time
