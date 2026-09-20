@@ -724,13 +724,13 @@ document.addEventListener('DOMContentLoaded', () => {
   // --- Add to Google Calendar ---
   if (addToCalendarBtn) {
     addToCalendarBtn.addEventListener('click', () => {
-      const groom = document.getElementById('displayGroom') ? document.getElementById('displayGroom').innerText : 'Gaurav';
       const bride = document.getElementById('displayBride') ? document.getElementById('displayBride').innerText : 'Madhu';
+      const groom = document.getElementById('displayGroom') ? document.getElementById('displayGroom').innerText : 'Gaurav';
       const venue = document.getElementById('displayVenue') ? document.getElementById('displayVenue').innerText : 'Grand Opera Banquet';
       const location = document.getElementById('displayLocation') ? document.getElementById('displayLocation').innerText : 'Bijwasan, Delhi';
 
-      const title = encodeURIComponent(`Wedding of ${groom} & ${bride}`);
-      const details = encodeURIComponent(`We cordially invite you to celebrate the auspicious wedding of ${groom} and ${bride} at ${venue}, ${location}.`);
+      const title = encodeURIComponent(`Wedding of ${bride} & ${groom}`);
+      const details = encodeURIComponent(`We cordially invite you to celebrate the auspicious wedding of ${bride} and ${groom} at ${venue}, ${location}.`);
       const loc = encodeURIComponent(`${venue}, ${location}`);
 
       // 25 November 2026, 7:00 PM IST is 13:30 UTC
