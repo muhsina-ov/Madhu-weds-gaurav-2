@@ -379,41 +379,7 @@ html, body {
   pointer-events: none;
 }
 
-/* --- Door Monogram Watermark & Tap Emblem --- */
-.door-monogram-watermark {
-  position: absolute;
-  top: 42%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: 290px;
-  height: 290px;
-  max-width: 72vw;
-  max-height: 72vw;
-  pointer-events: none;
-  opacity: 0.32;
-  filter: drop-shadow(0 0 30px rgba(229, 193, 88, 0.45));
-  animation: monogramGentlePulse 4s ease-in-out infinite;
-  z-index: 1;
-}
-
-.monogram-watermark-img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  display: block;
-}
-
-@keyframes monogramGentlePulse {
-  0%, 100% {
-    transform: translate(-50%, -50%) scale(1);
-    opacity: 0.28;
-  }
-  50% {
-    transform: translate(-50%, -50%) scale(1.05);
-    opacity: 0.38;
-  }
-}
-
+/* --- Tap Emblem & Keyhole Pulse --- */
 .keyhole-pulse {
   position: relative;
   width: 74px;
