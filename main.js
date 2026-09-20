@@ -556,10 +556,10 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // --- YouTube Background Music Player Engine (mMqJGTyA3T0, 00:00 to 01:03 loop) ---
-  const BGM_VIDEO_ID = 'mMqJGTyA3T0';
+  // --- YouTube Background Music Player Engine (YFoyYaheqLQ, loop) ---
+  const BGM_VIDEO_ID = 'YFoyYaheqLQ';
   const BGM_START_TIME = 0;
-  const BGM_END_TIME = 63; // 01:03
+  const BGM_END_TIME = 60;
 
   let ytPlayer = null;
   let bgmLoopTimer = null;
@@ -657,7 +657,8 @@ document.addEventListener('DOMContentLoaded', () => {
       if (ytPlayer && typeof ytPlayer.getCurrentTime === 'function') {
         try {
           const current = ytPlayer.getCurrentTime();
-          if (current >= BGM_END_TIME || (ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.ENDED)) {
+          const duration = (typeof ytPlayer.getDuration === 'function' && ytPlayer.getDuration() > 0) ? ytPlayer.getDuration() : BGM_END_TIME;
+          if (current >= duration - 0.5 || (ytPlayer.getPlayerState && ytPlayer.getPlayerState() === YT.PlayerState.ENDED)) {
             ytPlayer.seekTo(BGM_START_TIME, true);
             ytPlayer.playVideo();
           }
